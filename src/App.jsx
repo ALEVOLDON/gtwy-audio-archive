@@ -4,7 +4,7 @@ import {
     Terminal, Activity, Shield, Cpu, Wifi,
     Database, Radio, Volume2, AlertTriangle, ChevronRight,
     Eye, Fingerprint, Share2, Globe, Lock, Languages, Menu, X, Server,
-    Play, Pause
+    Play, Pause, SkipBack, SkipForward
 } from 'lucide-react';
 
 export default function App() {
@@ -23,6 +23,7 @@ export default function App() {
     const analyserRef = useRef(null);
     const audioElementsRef = useRef({});
     const sourceNodesRef = useRef({});
+    const playlistsRef = useRef({});
 
     // Use a generic royalty-free ambient sound for testing
     const defaultAudioSrc = "https://actions.google.com/sounds/v1/science_fiction/space_ship_engine.ogg";
@@ -215,42 +216,80 @@ export default function App() {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const fetchStreamUrl = async (bcPath) => {
+    const fetchPlaylist = async (bcPath) => {
         try {
             const res = await fetch(`/bandcamp${bcPath}`);
             const html = await res.text();
-            let audioUrl = null;
-            let trackTitle = 'Unknown Track';
-            let trackNum = '1';
+            let tracks = [];
 
             const match2 = html.match(/data-tralbum=\"([^\"]+)\"/);
             if (match2) {
                 const tralbum = JSON.parse(match2[1].replace(/&quot;/g, '\"'));
-                if (tralbum.trackinfo && tralbum.trackinfo[0]) {
-                    if (tralbum.trackinfo[0].file) {
-                        audioUrl = tralbum.trackinfo[0].file['mp3-128'];
-                    }
-                    trackTitle = tralbum.trackinfo[0].title || trackTitle;
-                    trackNum = tralbum.trackinfo[0].track_num || trackNum;
+                if (tralbum.trackinfo) {
+                    tracks = tralbum.trackinfo.filter(t => t.file && t.file['mp3-128']).map(t => {
+                        let audioUrl = t.file['mp3-128'].replace(/&amp;/g, '&');
+                        // Robust match for //t4.bcbits... or https://po.bcbits...
+                        const urlMatch = audioUrl.match(/^(?:https?:)?\/\/([^\.]+)\.bcbits\.com(.+)/);
+                        if (urlMatch) {
+                            audioUrl = `/bcbits/${urlMatch[1]}${urlMatch[2]}`;
+                        }
+                        return {
+                            src: audioUrl,
+                            title: t.title || 'Unknown Track',
+                            num: t.track_num || 1
+                        };
+                    });
                 }
             }
 
-            if (!audioUrl) {
+            // Fallback for extremely old single-track formats if needed
+            if (tracks.length === 0) {
                 const match = html.match(/\"file\":{.+?\"mp3-128\":\"([^\"]+)\"/);
-                if (match) audioUrl = match[1].replace(/&quot;/g, '');
-            }
-
-            if (audioUrl) {
-                const urlMatch = audioUrl.match(/https?:\/\/([^\.]+)\.bcbits\.com(.+)/);
-                if (urlMatch) {
-                    audioUrl = `/bcbits/${urlMatch[1]}${urlMatch[2]}`;
+                if (match) {
+                    let audioUrl = match[1].replace(/&quot;/g, '').replace(/&amp;/g, '&');
+                    const urlMatch = audioUrl.match(/^(?:https?:)?\/\/([^\.]+)\.bcbits\.com(.+)/);
+                    if (urlMatch) audioUrl = `/bcbits/${urlMatch[1]}${urlMatch[2]}`;
+                    tracks.push({ src: audioUrl, title: 'Unknown Track', num: 1 });
                 }
             }
-            return { src: audioUrl || defaultAudioSrc, title: trackTitle, num: trackNum };
+
+            console.log("Extracted playlist for", bcPath, tracks);
+            return tracks;
         } catch (e) {
             console.error("Failed to fetch stream", e);
-            return { src: defaultAudioSrc, title: 'Unknown', num: '1' };
+            return [];
         }
+    };
+
+    const playNextOrPrev = (albumId, direction) => {
+        const audio = audioElementsRef.current[albumId];
+        const playlist = playlistsRef.current[albumId];
+        if (!audio || !playlist) return;
+
+        const currentIdx = parseInt(audio.dataset.trackIndex);
+        let nextIdx = currentIdx + direction;
+
+        if (nextIdx < 0) nextIdx = 0;
+        if (nextIdx >= playlist.length) nextIdx = 0; // loop back to start if next on last track
+
+        const track = playlist[nextIdx];
+        if (!track) return;
+
+        audio.src = track.src;
+        audio.dataset.trackIndex = nextIdx;
+        audio.dataset.title = track.title;
+        audio.dataset.num = track.num;
+        audio.play().then(() => {
+            setPlayingId(albumId);
+            setCurrentTrack({
+                albumId: albumId,
+                trackIndex: nextIdx,
+                title: track.title,
+                num: track.num,
+                duration: audio.duration || 0,
+                currentTime: audio.currentTime || 0
+            });
+        }).catch(error => console.error("Skip error:", error));
     };
 
     const togglePlay = async (albumId, e) => {
@@ -272,24 +311,28 @@ export default function App() {
             setIsLoadingAudio(true);
             const albumObj = albums.find(a => a.id === albumId);
             const bcPath = albumObj?.bcPath;
-            let srcUrl = defaultAudioSrc;
-            let trackTitle = albumObj?.title || 'Unknown';
-            let trackNum = '1';
+            let playlist = [];
 
             if (bcPath) {
-                const data = await fetchStreamUrl(bcPath);
-                srcUrl = data.src;
-                trackTitle = data.title;
-                trackNum = data.num;
+                playlist = await fetchPlaylist(bcPath);
             }
 
-            audio = new Audio(srcUrl);
+            if (playlist.length === 0) {
+                // fallback
+                playlist = [{ src: defaultAudioSrc, title: albumObj?.title || 'Unknown', num: 1 }];
+            }
+
+            playlistsRef.current[albumId] = playlist;
+            const track = playlist[0];
+
+            audio = new Audio(track.src);
             audio.crossOrigin = "anonymous";
-            audio.loop = true;
+            audio.loop = false;
 
             audio.dataset.albumId = albumId;
-            audio.dataset.title = trackTitle;
-            audio.dataset.num = trackNum;
+            audio.dataset.trackIndex = 0;
+            audio.dataset.title = track.title;
+            audio.dataset.num = track.num;
 
             audio.addEventListener('timeupdate', () => {
                 setCurrentTrack(prev => {
@@ -307,6 +350,33 @@ export default function App() {
                     }
                     return prev;
                 });
+            });
+
+            audio.addEventListener('ended', () => {
+                const aId = audio.dataset.albumId;
+                const currentIdx = parseInt(audio.dataset.trackIndex);
+                const aPlaylist = playlistsRef.current[aId];
+                if (aPlaylist && currentIdx + 1 < aPlaylist.length) {
+                    const trackIndex = currentIdx + 1;
+                    const nextTrack = aPlaylist[trackIndex];
+                    audio.src = nextTrack.src;
+                    audio.dataset.trackIndex = trackIndex;
+                    audio.dataset.title = nextTrack.title;
+                    audio.dataset.num = nextTrack.num;
+                    audio.play().then(() => {
+                        setPlayingId(aId);
+                        setCurrentTrack({
+                            albumId: aId,
+                            trackIndex: trackIndex,
+                            title: nextTrack.title,
+                            num: nextTrack.num,
+                            duration: audio.duration || 0,
+                            currentTime: audio.currentTime || 0
+                        });
+                    });
+                } else {
+                    setPlayingId(null);
+                }
             });
 
             audioElementsRef.current[albumId] = audio;
@@ -327,6 +397,7 @@ export default function App() {
                 setPlayingId(albumId);
                 setCurrentTrack({
                     albumId: albumId,
+                    trackIndex: parseInt(audio.dataset.trackIndex),
                     title: audio.dataset.title,
                     num: audio.dataset.num,
                     duration: audio.duration || 0,
@@ -723,16 +794,15 @@ export default function App() {
                         </div>
 
                         {/* Mobile right side controls */}
-                        <div className="flex md:hidden items-center gap-4">
-                            <div className="text-[9px] font-mono font-bold text-zinc-500 text-right">
-                                <span className="text-cyan-400">{formatTime(currentTrack.currentTime)}</span><br />{formatTime(currentTrack.duration)}
-                            </div>
+                        <div className="flex md:hidden items-center gap-2">
+                            <button onClick={() => playNextOrPrev(currentTrack.albumId, -1)} className="text-zinc-500 hover:text-cyan-400 p-2"><SkipBack size={16} fill="currentColor" /></button>
                             <button
                                 onClick={(e) => togglePlay(currentTrack.albumId, e)}
                                 className="w-10 h-10 flex-shrink-0 rounded-full bg-cyan-500/10 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-500 hover:text-black transition-colors"
                             >
                                 {playingId === currentTrack.albumId ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-1" />}
                             </button>
+                            <button onClick={() => playNextOrPrev(currentTrack.albumId, 1)} className="text-zinc-500 hover:text-cyan-400 p-2"><SkipForward size={16} fill="currentColor" /></button>
                         </div>
                     </div>
 
@@ -741,12 +811,16 @@ export default function App() {
                         <div className="text-[10px] font-mono font-bold text-zinc-500 min-w-[100px] text-right">
                             <span className="text-cyan-400">{formatTime(currentTrack.currentTime)}</span> / {formatTime(currentTrack.duration)}
                         </div>
-                        <button
-                            onClick={(e) => togglePlay(currentTrack.albumId, e)}
-                            className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-500 hover:text-black transition-colors"
-                        >
-                            {playingId === currentTrack.albumId ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => playNextOrPrev(currentTrack.albumId, -1)} className="text-zinc-500 hover:text-cyan-400 transition-colors"><SkipBack size={18} fill="currentColor" /></button>
+                            <button
+                                onClick={(e) => togglePlay(currentTrack.albumId, e)}
+                                className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-500 hover:text-black transition-colors"
+                            >
+                                {playingId === currentTrack.albumId ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+                            </button>
+                            <button onClick={() => playNextOrPrev(currentTrack.albumId, 1)} className="text-zinc-500 hover:text-cyan-400 transition-colors"><SkipForward size={18} fill="currentColor" /></button>
+                        </div>
                     </div>
                 </div>
             )}
