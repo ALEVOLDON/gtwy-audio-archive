@@ -103,61 +103,61 @@ export default function App() {
     const albums = [
         {
             id: "GT-10", title: "lighthouse and sirius", price: "5.00", year: "202x",
-            image: "https://images.unsplash.com/photo-1515462277126-2dd0c162007a?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a2954440509_5.jpg",
             desc: { en: "Exploration of perfect forms through distorted rhythms.", ru: "Исследование идеальных форм через искаженные ритмы." },
             bcPath: "/album/lighthouse-and-sirius"
         },
         {
             id: "GT-09", title: "CROCK", price: "5.00", year: "202x",
-            image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a2144766970_5.jpg",
             desc: { en: "Deconstruction of structure. Violation of order.", ru: "Деконструкция структуры. Нарушение порядка." },
             bcPath: "/album/crock"
         },
         {
             id: "GT-08", title: "Inevitability", price: "7.00", year: "2018",
-            image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a4156640949_5.jpg",
             desc: { en: "Biological impulses converted into digital signals.", ru: "Биологические импульсы в цифровой сигнал." },
             bcPath: "/album/inevitability-2018"
         },
         {
             id: "GT-07", title: "Droppin The Pressure", price: "6.00", year: "2018",
-            image: "https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a1141678879_5.jpg",
             desc: { en: "The boundary between organics and machine code.", ru: "Граница между органикой и машинным кодом." },
             bcPath: "/album/droppin-the-pressure-2018"
         },
         {
             id: "GT-06", title: "KIEV", price: "8.50", year: "2017",
-            image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a0991098267_5.jpg",
             desc: { en: "Tangible sound. Dense texture of industrial noise.", ru: "Ощутимый звук. Плотная текстура шума." },
             bcPath: "/album/kiev-2017"
         },
         {
             id: "GT-05", title: "Amnesiac", price: "5.00", year: "2010",
-            image: "https://images.unsplash.com/photo-1614850523060-8da1d56ae167?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a2727106939_5.jpg",
             desc: { en: "Pure matter of sound. Deep experimental landscapes.", ru: "Чистая материя звука. Глубокие ландшафты." },
             bcPath: "/album/amnesiac-2010"
         },
         {
             id: "GT-04", title: "Violet", price: "6.00", year: "2009",
-            image: "https://images.unsplash.com/photo-1485637701894-09ad422f6de6?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a3420303523_5.jpg",
             desc: { en: "Architecture of sound spaces and modular synthesis.", ru: "Архитектура звуковых пространств." },
             bcPath: "/album/violet-2009"
         },
         {
             id: "GT-03", title: "CUBE3", price: "4.00", year: "2008",
-            image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a0284896504_5.jpg",
             desc: { en: "Continuous stream of binary data and interference.", ru: "Непрерывный поток бинарных данных." },
             bcPath: "/album/cube3-2008"
         },
         {
             id: "GT-02", title: "geometric progression", price: "5.00", year: "2007",
-            image: "https://images.unsplash.com/photo-1504333638930-c8787321eee0?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a4169044455_5.jpg",
             desc: { en: "Early protocols of the GTWY gateway.", ru: "Ранние протоколы шлюза GTWY." },
             bcPath: "/album/geometric-progression-2007"
         },
         {
             id: "GT-01", title: "Master Tempo", price: "5.00", year: "2006",
-            image: "https://images.unsplash.com/photo-1504333638930-c8787321eee0?auto=format&fit=crop&q=80&w=500",
+            image: "https://f4.bcbits.com/img/a3011597622_5.jpg",
             desc: { en: "Initial gateway sequence.", ru: "Начальная последовательность шлюза." },
             bcPath: "/album/master-tempo-2006"
         },
