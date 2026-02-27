@@ -15,6 +15,11 @@ export default function App() {
     const [logs, setLogs] = useState([]);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+    const [coreLoad, setCoreLoad] = useState(12);
+    const [memAlloc, setMemAlloc] = useState(2.4);
+    const [uptime, setUptime] = useState(482);
+    const [ping, setPing] = useState(14);
+
     const canvasRef = useRef(null);
 
     const [playingId, setPlayingId] = useState(null);
@@ -96,6 +101,15 @@ export default function App() {
 
     useEffect(() => {
         setLogs([t[lang].log_boot, t[lang].log_active]);
+
+        const interval = setInterval(() => {
+            setCoreLoad(Math.floor(Math.random() * 15) + 5);
+            setMemAlloc((Math.random() * 0.8 + 2.0).toFixed(1));
+            setPing(Math.floor(Math.random() * 20) + 10);
+            setUptime(prev => prev + 1);
+        }, 3000);
+
+        return () => clearInterval(interval);
     }, [lang]);
 
     const addLog = (msg) => setLogs(prev => [`> ${msg}`, ...prev].slice(0, 8));
@@ -254,6 +268,7 @@ export default function App() {
             }
 
             console.log("Extracted playlist for", bcPath, tracks);
+            addLog(`SYNC_NODE_${bcPath.split('/').pop().toUpperCase()}`);
             return tracks;
         } catch (e) {
             console.error("Failed to fetch stream", e);
@@ -281,6 +296,7 @@ export default function App() {
         audio.dataset.num = track.num;
         audio.play().then(() => {
             setPlayingId(albumId);
+            addLog(`TRACK_${direction > 0 ? 'FWD' : 'REV'}_${albumId}_T${track.num}`);
             setCurrentTrack({
                 albumId: albumId,
                 trackIndex: nextIdx,
@@ -365,6 +381,7 @@ export default function App() {
                     audio.dataset.num = nextTrack.num;
                     audio.play().then(() => {
                         setPlayingId(aId);
+                        addLog(`AUTO_NEXT_${aId}_T${nextTrack.num}`);
                         setCurrentTrack({
                             albumId: aId,
                             trackIndex: trackIndex,
@@ -618,19 +635,19 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-zinc-900 p-2 rounded border border-zinc-800">
                                 <span className="block text-[8px] text-zinc-500 uppercase">Core_Load</span>
-                                <span className="text-emerald-500 font-mono font-bold">12%</span>
+                                <span className="text-emerald-500 font-mono font-bold">{coreLoad}%</span>
                             </div>
                             <div className="bg-zinc-900 p-2 rounded border border-zinc-800">
                                 <span className="block text-[8px] text-zinc-500 uppercase">Mem_Alloc</span>
-                                <span className="text-cyan-500 font-mono font-bold">2.4GB</span>
+                                <span className="text-cyan-500 font-mono font-bold">{memAlloc}GB</span>
                             </div>
                             <div className="bg-zinc-900 p-2 rounded border border-zinc-800">
                                 <span className="block text-[8px] text-zinc-500 uppercase">Uptime</span>
-                                <span className="text-zinc-300 font-mono font-bold">482h</span>
+                                <span className="text-zinc-300 font-mono font-bold">{uptime}h</span>
                             </div>
                             <div className="bg-zinc-900 p-2 rounded border border-zinc-800">
                                 <span className="block text-[8px] text-zinc-500 uppercase">Ping</span>
-                                <span className="text-zinc-300 font-mono font-bold">14ms</span>
+                                <span className="text-zinc-300 font-mono font-bold">{ping}ms</span>
                             </div>
                         </div>
                         <p className="text-[9px] text-zinc-700 leading-tight">
