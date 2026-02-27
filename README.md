@@ -15,6 +15,14 @@ A web interface for browsing, previewing, and purchasing albums from the GTWY mu
 - **Responsive Design** — Mobile-first layout with collapsible menu
 - **System Dashboard** — Live metrics panel and operational logs
 
+## Screenshots
+
+### Full Interface
+![GTWY Archive Full Interface](docs/screenshots/screen-2.png)
+
+### Main Content
+![GTWY Archive Main Content](docs/screenshots/screen-1.png)
+
 ## Tech Stack
 
 | Layer | Tech |
@@ -77,3 +85,4 @@ src/
 ## License
 
 © GTWY. All rights reserved.
+
