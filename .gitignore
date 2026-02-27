@@ -14,6 +14,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+amnesiac.html
+master_tempo.html
+albums_array.json
+metadata_results.txt
 
 # Editor directories and files
 .vscode/*
