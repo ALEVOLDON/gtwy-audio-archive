@@ -3,7 +3,8 @@ import {
     Disc, Wallet, Download, CheckCircle, Zap,
     Terminal, Activity, Shield, Cpu, Wifi,
     Database, Radio, Volume2, AlertTriangle, ChevronRight,
-    Eye, Fingerprint, Share2, Globe, Lock, Languages, Menu, X, Server
+    Eye, Fingerprint, Share2, Globe, Lock, Languages, Menu, X, Server,
+    Play, Pause
 } from 'lucide-react';
 
 export default function App() {
@@ -15,6 +16,15 @@ export default function App() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const canvasRef = useRef(null);
+
+    const [playingId, setPlayingId] = useState(null);
+    const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+    const audioElementsRef = useRef({});
+    const sourceNodesRef = useRef({});
+
+    // Use a generic royalty-free ambient sound for testing
+    const defaultAudioSrc = "https://actions.google.com/sounds/v1/science_fiction/space_ship_engine.ogg";
 
     // --- TEXT DICTIONARY ---
     const t = {
@@ -92,52 +102,62 @@ export default function App() {
         {
             id: "GT-10", title: "lighthouse and sirius", price: "5.00", year: "202x",
             image: "https://images.unsplash.com/photo-1515462277126-2dd0c162007a?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Exploration of perfect forms through distorted rhythms.", ru: "Исследование идеальных форм через искаженные ритмы." }
+            desc: { en: "Exploration of perfect forms through distorted rhythms.", ru: "Исследование идеальных форм через искаженные ритмы." },
+            bcPath: "/album/lighthouse-and-sirius"
         },
         {
             id: "GT-09", title: "CROCK", price: "5.00", year: "202x",
             image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Deconstruction of structure. Violation of order.", ru: "Деконструкция структуры. Нарушение порядка." }
+            desc: { en: "Deconstruction of structure. Violation of order.", ru: "Деконструкция структуры. Нарушение порядка." },
+            bcPath: "/album/crock"
         },
         {
             id: "GT-08", title: "Inevitability", price: "7.00", year: "2018",
             image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Biological impulses converted into digital signals.", ru: "Биологические импульсы в цифровой сигнал." }
+            desc: { en: "Biological impulses converted into digital signals.", ru: "Биологические импульсы в цифровой сигнал." },
+            bcPath: "/album/inevitability-2018"
         },
         {
             id: "GT-07", title: "Droppin The Pressure", price: "6.00", year: "2018",
             image: "https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "The boundary between organics and machine code.", ru: "Граница между органикой и машинным кодом." }
+            desc: { en: "The boundary between organics and machine code.", ru: "Граница между органикой и машинным кодом." },
+            bcPath: "/album/droppin-the-pressure-2018"
         },
         {
             id: "GT-06", title: "KIEV", price: "8.50", year: "2017",
             image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Tangible sound. Dense texture of industrial noise.", ru: "Ощутимый звук. Плотная текстура шума." }
+            desc: { en: "Tangible sound. Dense texture of industrial noise.", ru: "Ощутимый звук. Плотная текстура шума." },
+            bcPath: "/album/kiev-2017"
         },
         {
             id: "GT-05", title: "Amnesiac", price: "5.00", year: "2010",
             image: "https://images.unsplash.com/photo-1614850523060-8da1d56ae167?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Pure matter of sound. Deep experimental landscapes.", ru: "Чистая материя звука. Глубокие ландшафты." }
+            desc: { en: "Pure matter of sound. Deep experimental landscapes.", ru: "Чистая материя звука. Глубокие ландшафты." },
+            bcPath: "/album/amnesiac-2010"
         },
         {
             id: "GT-04", title: "Violet", price: "6.00", year: "2009",
             image: "https://images.unsplash.com/photo-1485637701894-09ad422f6de6?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Architecture of sound spaces and modular synthesis.", ru: "Архитектура звуковых пространств." }
+            desc: { en: "Architecture of sound spaces and modular synthesis.", ru: "Архитектура звуковых пространств." },
+            bcPath: "/album/violet-2009"
         },
         {
             id: "GT-03", title: "CUBE3", price: "4.00", year: "2008",
             image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Continuous stream of binary data and interference.", ru: "Непрерывный поток бинарных данных." }
+            desc: { en: "Continuous stream of binary data and interference.", ru: "Непрерывный поток бинарных данных." },
+            bcPath: "/album/cube3-2008"
         },
         {
             id: "GT-02", title: "geometric progression", price: "5.00", year: "2007",
             image: "https://images.unsplash.com/photo-1504333638930-c8787321eee0?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Early protocols of the GTWY gateway.", ru: "Ранние протоколы шлюза GTWY." }
+            desc: { en: "Early protocols of the GTWY gateway.", ru: "Ранние протоколы шлюза GTWY." },
+            bcPath: "/album/geometric-progression-2007"
         },
         {
             id: "GT-01", title: "Master Tempo", price: "5.00", year: "2006",
             image: "https://images.unsplash.com/photo-1504333638930-c8787321eee0?auto=format&fit=crop&q=80&w=500",
-            desc: { en: "Initial gateway sequence.", ru: "Начальная последовательность шлюза." }
+            desc: { en: "Initial gateway sequence.", ru: "Начальная последовательность шлюза." },
+            bcPath: "/album/master-tempo-2006"
         },
     ];
 
@@ -171,6 +191,103 @@ export default function App() {
         setLang(prev => prev === 'en' ? 'ru' : 'en');
     };
 
+    const initAudio = () => {
+        if (!audioContextRef.current) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioContextRef.current = new AudioContext();
+            analyserRef.current = audioContextRef.current.createAnalyser();
+            analyserRef.current.fftSize = 256;
+            analyserRef.current.smoothingTimeConstant = 0.8;
+            analyserRef.current.connect(audioContextRef.current.destination);
+        }
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+    };
+
+    const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+
+    const fetchStreamUrl = async (bcPath) => {
+        try {
+            const res = await fetch(`/bandcamp${bcPath}`);
+            const html = await res.text();
+            let audioUrl = null;
+            const match = html.match(/\"file\":{.+?\"mp3-128\":\"([^\"]+)\"/);
+            if (match) audioUrl = match[1].replace(/&quot;/g, '');
+            else {
+                const match2 = html.match(/data-tralbum=\"([^\"]+)\"/);
+                if (match2) {
+                    const tralbum = JSON.parse(match2[1].replace(/&quot;/g, '\"'));
+                    if (tralbum.trackinfo && tralbum.trackinfo[0] && tralbum.trackinfo[0].file) {
+                        audioUrl = tralbum.trackinfo[0].file['mp3-128'];
+                    }
+                }
+            }
+            if (audioUrl) {
+                const urlMatch = audioUrl.match(/https?:\/\/([^\.]+)\.bcbits\.com(.+)/);
+                if (urlMatch) {
+                    return `/bcbits/${urlMatch[1]}${urlMatch[2]}`;
+                }
+            }
+            return defaultAudioSrc;
+        } catch (e) {
+            console.error("Failed to fetch stream", e);
+            return defaultAudioSrc;
+        }
+    };
+
+    const togglePlay = async (albumId, e) => {
+        e.stopPropagation();
+        if (isLoadingAudio) return;
+
+        initAudio();
+
+        // Pause current if it's playing and different
+        if (playingId && playingId !== albumId) {
+            const prevAudio = audioElementsRef.current[playingId];
+            if (prevAudio) prevAudio.pause();
+        }
+
+        let audio = audioElementsRef.current[albumId];
+
+        // Setup audio element if it doesn't exist
+        if (!audio) {
+            setIsLoadingAudio(true);
+            const albumObj = albums.find(a => a.id === albumId);
+            const bcPath = albumObj?.bcPath;
+            let srcUrl = defaultAudioSrc;
+
+            if (bcPath) {
+                srcUrl = await fetchStreamUrl(bcPath);
+            }
+
+            audio = new Audio(srcUrl);
+            audio.crossOrigin = "anonymous";
+            audio.loop = true;
+            audioElementsRef.current[albumId] = audio;
+
+            // Connect to analyser
+            const source = audioContextRef.current.createMediaElementSource(audio);
+            source.connect(analyserRef.current);
+            sourceNodesRef.current[albumId] = source;
+            setIsLoadingAudio(false);
+        }
+
+        if (playingId === albumId) {
+            audio.pause();
+            setPlayingId(null);
+            addLog(`AUDIO_PAUSED_${albumId}`);
+        } else {
+            audio.play().then(() => {
+                setPlayingId(albumId);
+                addLog(`AUDIO_PLAYING_${albumId}`);
+            }).catch(error => {
+                addLog(`AUDIO_ERR: ${error.message}`);
+                setPlayingId(albumId); // Fallback for visual indication if autoplay blocked
+            });
+        }
+    };
+
     // --- 3D VISUALIZATION LOGIC ---
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -202,7 +319,8 @@ export default function App() {
                 x: Math.cos(phi) * Math.sin(theta),
                 y: Math.sin(phi) * Math.sin(theta),
                 z: Math.cos(theta),
-                phase: Math.random() * Math.PI * 2
+                phase: Math.random() * Math.PI * 2,
+                index: i
             });
         }
 
@@ -215,6 +333,18 @@ export default function App() {
             // Responsive radius
             const radius = Math.min(canvas.width, canvas.height) * 0.35;
 
+            let audioData = null;
+            let audioIntensity = 0;
+
+            if (analyserRef.current) {
+                audioData = new Uint8Array(analyserRef.current.frequencyBinCount);
+                analyserRef.current.getByteFrequencyData(audioData);
+
+                let sum = 0;
+                for (let i = 0; i < Math.min(audioData.length, 64); i++) sum += audioData[i];
+                audioIntensity = sum / Math.min(audioData.length, 64); // Average of lower frequencies
+            }
+
             angle += 0.005;
 
             ctx.strokeStyle = '#22d3ee';
@@ -224,8 +354,9 @@ export default function App() {
             const projected = [];
 
             particles.forEach(p => {
-                // Dynamic breathing effect
-                const r = radius + Math.sin(angle * 2 + p.phase) * 10;
+                // Dynamic breathing effect + audio reaction
+                const audioPulse = audioData ? (audioData[p.index % audioData.length] / 255) * 40 : 0;
+                const r = radius + Math.sin(angle * 2 + p.phase) * 10 + audioPulse + (audioIntensity * 0.15);
 
                 let x = p.x * r;
                 let y = p.y * r;
@@ -325,7 +456,7 @@ export default function App() {
                 {/* Hero Overlay Text */}
                 <div className="absolute bottom-4 left-4 md:left-8 z-20 flex items-center gap-2 text-cyan-500 animate-pulse">
                     <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                    <span className="text-[10px] font-bold tracking-[0.2em]">{t[lang].visualizer_status}</span>
+                    <span className="text-[10px] font-bold tracking-[0.2em]">{playingId ? t[lang].visualizer_status + ' [AUDIO REACTIVE]' : t[lang].visualizer_status}</span>
                 </div>
             </div>
 
@@ -437,6 +568,20 @@ export default function App() {
                                     <div className="absolute bottom-0 right-0 bg-black/80 backdrop-blur px-3 py-1 border-t border-l border-zinc-800">
                                         <span className="text-white font-bold">{album.price} <span className="text-cyan-500 text-[10px]">USDT</span></span>
                                     </div>
+                                    <button
+                                        onClick={(e) => togglePlay(album.id, e)}
+                                        className={`absolute inset-0 m-auto w-16 h-16 rounded-full bg-black/50 border border-zinc-500/50 flex items-center justify-center transition-all z-20 backdrop-blur-sm ${isLoadingAudio ? 'opacity-50 cursor-wait' : ''} ${playingId === album.id ? 'opacity-100 border-cyan-500 text-cyan-400 scale-110' : 'opacity-0 group-hover:opacity-100 hover:border-cyan-500 hover:text-cyan-400 hover:scale-105'}`}
+                                    >
+                                        {playingId === album.id ? <Pause fill="currentColor" size={24} /> : <Play fill="currentColor" size={24} className="ml-1" />}
+                                    </button>
+                                    {playingId === album.id && (
+                                        <div className="absolute top-4 left-4 z-20 flex items-end gap-1 h-3">
+                                            <div className="w-1.5 h-full bg-cyan-500 animate-pulse" style={{ animationDelay: "0ms" }} />
+                                            <div className="w-1.5 h-[60%] bg-cyan-500 animate-pulse" style={{ animationDelay: "200ms" }} />
+                                            <div className="w-1.5 h-[80%] bg-cyan-500 animate-pulse" style={{ animationDelay: "400ms" }} />
+                                            <div className="w-1.5 h-[100%] bg-cyan-500 animate-pulse" style={{ animationDelay: "100ms" }} />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="p-5 flex-1 flex flex-col border-t border-zinc-800">
