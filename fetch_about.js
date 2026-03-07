@@ -11,19 +11,62 @@ const albums = [
   { "id": "GT-01", "bcPath": "/album/master-tempo-2006" }
 ];
 
+function decodeHtmlEntities(value) {
+  return value.replace(/&(?:quot|amp|#39|lt|gt|#(\d+)|#x([0-9a-fA-F]+));/g, (match, dec, hex) => {
+    if (dec) {
+      return String.fromCodePoint(Number(dec));
+    }
+
+    if (hex) {
+      return String.fromCodePoint(parseInt(hex, 16));
+    }
+
+    switch (match) {
+      case "&quot;":
+        return '"';
+      case "&amp;":
+        return "&";
+      case "&#39;":
+        return "'";
+      case "&lt;":
+        return "<";
+      case "&gt;":
+        return ">";
+      default:
+        return match;
+    }
+  });
+}
+
+function extractAbout(text) {
+  const tralbumMatch = text.match(/data-tralbum="([^"]+)"/);
+  if (tralbumMatch) {
+    const tralbumData = JSON.parse(decodeHtmlEntities(tralbumMatch[1]));
+    const about = tralbumData?.current?.about;
+    if (typeof about === "string" && about.trim()) {
+      return about.trim().replace(/\s+/g, " ");
+    }
+  }
+
+  const ldJsonMatch = text.match(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/i);
+  if (ldJsonMatch) {
+    const metadata = JSON.parse(ldJsonMatch[1]);
+    const description = metadata?.description;
+    if (typeof description === "string" && description.trim()) {
+      return description.trim().replace(/\s+/g, " ");
+    }
+  }
+
+  return "";
+}
+
 async function main() {
   for (const a of albums) {
     try {
       const res = await fetch(`https://gtwy.bandcamp.com${a.bcPath}`);
       const text = await res.text();
 
-      // Try for about section
-      let desc = "";
-      const aboutMatch = text.match(/<div class="tralbum-about">\s*(.*?)\s*<\/div>/s);
-      if (aboutMatch) {
-         // strip simple tags
-         desc = aboutMatch[1].replace(/<br\s*[\/]?>/gi, " ").replace(/<[^>]*>?/gm, "").trim();
-      }
+      const desc = extractAbout(text);
       
       console.log(`-- ${a.id} --`);
       console.log(`About: "${desc.slice(0, 100)}..."`);
